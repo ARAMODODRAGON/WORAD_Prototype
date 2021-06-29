@@ -4,23 +4,39 @@ using UnityEngine;
 
 public class TilePhysics : ScriptableObject {
 
-	public static TilePhysics Instance {
-		get {
-			if (!s_instance) s_instance = CreateInstance<TilePhysics>();
-			return s_instance;
+	// returns the room with the given name
+	public static Room GetRoom(string name) {
+		try {
+			return m_rooms[name];
+		} catch (KeyNotFoundException) {
+			return null;
 		}
 	}
-	private static TilePhysics s_instance = null;
+
+	// gets the tiletype at the position and floor
+	public static TileType GetTile(Vector2Int pos, int floorpos) {
+		Floor floor = m_activeRoom.GetFloor(floorpos);
+		return floor.GetTile(pos);
+	}
 
 
+	public static void AddRoom(string name, Room room) => m_rooms.Add(name, room);
+	public static bool RemoveRoom(string name) => m_rooms.Remove(name);
 
+	private static Dictionary<string, Room> m_rooms = new Dictionary<string, Room>();
+	private static Room m_activeRoom = null;
 
-
-	public void AddEntity(EntityBody e) => m_entities.Add(e);
-	public bool RemoveEntity(EntityBody e) => m_entities.Remove(e);
-	public void AddCollisionMap(CollisionMap cm) => m_collisionmaps.Add(cm);
-	public bool RemoveCollisionMap(CollisionMap cm) => m_collisionmaps.Remove(cm);
-	private List<EntityBody> m_entities = new List<EntityBody>();
-	private List<CollisionMap> m_collisionmaps = new List<CollisionMap>();
-
+	//public static TilePhysics Instance 
+	//	get 
+	//		if (!s_instance) s_instance = CreateInstance<TilePhysics>();
+	//		return s_instance;
+	//	
+	//
+	//private static TilePhysics s_instance = null;
+	//public void AddEntity(EntityBody e) => m_entities.Add(e);
+	//public bool RemoveEntity(EntityBody e) => m_entities.Remove(e);
+	//public void AddRoom(Room r) => m_rooms.Add(r);
+	//public bool RemoveRoom(Room r) => m_rooms.Remove(r);
+	//private List<EntityBody> m_entities = new List<EntityBody>();
+	//private List<Room> m_rooms = new List<Room>();
 }
