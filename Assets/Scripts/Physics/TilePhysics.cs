@@ -4,6 +4,8 @@ using UnityEngine;
 
 public class TilePhysics : ScriptableObject {
 
+	public static Room ActiveRoom { get; set; } = null;
+
 	// returns the room with the given name
 	public static Room GetRoom(string name) {
 		try {
@@ -15,7 +17,7 @@ public class TilePhysics : ScriptableObject {
 
 	// gets the tiletype at the position and floor
 	public static TileType GetTile(Vector2Int pos, int floorpos) {
-		Floor floor = m_activeRoom.GetFloor(floorpos);
+		Floor floor = ActiveRoom.GetFloor(floorpos);
 		return floor.GetTile(pos);
 	}
 
@@ -24,7 +26,6 @@ public class TilePhysics : ScriptableObject {
 	public static bool RemoveRoom(string name) => m_rooms.Remove(name);
 
 	private static Dictionary<string, Room> m_rooms = new Dictionary<string, Room>();
-	private static Room m_activeRoom = null;
 
 	//public static TilePhysics Instance 
 	//	get 

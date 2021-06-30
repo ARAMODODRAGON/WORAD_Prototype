@@ -25,6 +25,10 @@ public sealed class Room : MonoBehaviour {
 
 	}
 
+	private void Start() {
+		TilePhysics.ActiveRoom = this;	
+	}
+
 	//private void OnDestroy() {
 	//	if (!TilePhysics.Instance.RemoveRoom(this)) {
 	//		Debug.LogError("Failed to remove Room from list, it was not found!");

@@ -25,7 +25,7 @@ public sealed class Floor : MonoBehaviour {
 
 	private void Awake() {
 		// hide it because we only need the data stored within it
-		if (m_collisionMap) m_collisionMap.gameObject.SetActive(false);
+		//if (m_collisionMap) m_collisionMap.gameObject.SetActive(false);
 
 		// get all entities
 		foreach (Transform t in transform) {

@@ -64,15 +64,25 @@ public sealed class EntityBody : MonoBehaviour {
 	private Vector2 m_offsetPos = Vector2.zero;
 
 	// moves this body according to the input direction, 
-	// returns false if already moving or if input was None
+	// returns false if already moving or if input was None or if it failed to move
 	public bool MoveInput(Direction dir) {
 		if (!CanMove || dir == Direction.None) {
 			m_nextMoveDir = dir;
 			return false;
 		}
 
-		// set our info
 		m_moveDelta = 0.0f;
+		return CheckAndMove(dir);
+	}
+
+	private bool CheckAndMove(Direction dir) {
+		// test to see if we can move
+		Vector2Int newpos = GroundPosition + dir.ToVector2Int();
+		if (TilePhysics.GetTile(newpos, CurrentFloor) == TileType.Wall) {
+			return false;
+		}
+
+		// set our info
 		m_currentMoveDir = dir;
 		State = EntityBodyState.Walking;
 
@@ -100,31 +110,36 @@ public sealed class EntityBody : MonoBehaviour {
 			// reached tile
 			if (m_moveDelta > 1.0f) {
 				// move ground pos
-				GroundPosition += DirectionMath.ToVector2Int(m_currentMoveDir);
+				GroundPosition += m_currentMoveDir.ToVector2Int();
+
+				// check for movement
+				if (m_nextMoveDir != Direction.None) {
+					// continue moving
+					if (m_nextMoveDir == m_currentMoveDir) {
+						m_moveDelta -= 1f;
+						if (!CheckAndMove(m_nextMoveDir)) State = EntityBodyState.Standing;
+					}
+					// continue in different direction
+					else {
+						m_moveDelta = 0f;
+						if (!CheckAndMove(m_nextMoveDir)) State = EntityBodyState.Standing;
+					}
+				} 
+				// force reset when no held direction
+				else State = EntityBodyState.Standing;
 
 				// reset
-				if (m_nextMoveDir != m_currentMoveDir && m_nextMoveDir == Direction.None) {
+				if (IsStanding) {
 					m_moveDelta = 0f;
 					m_offsetPos = Vector2.zero;
 					m_currentMoveDir = Direction.None;
-					State = EntityBodyState.Standing;
-				}
-				// continue moving
-				else if (m_nextMoveDir == m_currentMoveDir) {
-					m_moveDelta -= 1f;
-					m_currentMoveDir = m_nextMoveDir;
-				}
-				// continue in different direction
-				else {
-					m_moveDelta = 0f;
-					m_currentMoveDir = m_nextMoveDir;
 				}
 			}
 			m_nextMoveDir = Direction.None;
 
 			// set offset
-			if (m_moveDelta <= 1.0f) {
-				m_offsetPos = DirectionMath.ToVector2(m_currentMoveDir) * m_moveDelta * m_worldScale;
+			if (!IsStanding && m_moveDelta <= 1.0f) {
+				m_offsetPos = m_currentMoveDir.ToVector2() * m_moveDelta * m_worldScale;
 			}
 		}
 
@@ -132,7 +147,7 @@ public sealed class EntityBody : MonoBehaviour {
 		// set position
 		Vector3 pos = GroundPosition.ToVector3();
 		pos.y += VerticalPositionF;
-		transform.position = pos + m_offsetPos.ToVector3();
+		transform.position = pos + m_offsetPos.ToVector3() + new Vector3(0.5f, 0.5f, 0f);
 
 	}
 
