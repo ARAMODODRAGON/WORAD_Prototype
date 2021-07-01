@@ -18,9 +18,16 @@ public class TilePhysics : ScriptableObject {
 	// gets the tiletype at the position and floor
 	public static TileType GetTile(Vector2Int pos, int floorpos) {
 		Floor floor = ActiveRoom.GetFloor(floorpos);
-		return floor.GetTile(pos);
+		if (floor) return floor.GetTile(pos);
+		return TileType.Floor; // assume floor is default
 	}
 
+	// gets the entity at position
+	public static EntityBody GetEntity(Vector2Int pos, int floorpos) {
+		Floor floor = ActiveRoom.GetFloor(floorpos);
+		if (floor) return floor.GetEntityAt(pos);
+		return null;
+	}
 
 	public static void AddRoom(string name, Room room) => m_rooms.Add(name, room);
 	public static bool RemoveRoom(string name) => m_rooms.Remove(name);

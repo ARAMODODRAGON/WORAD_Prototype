@@ -2,10 +2,14 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public static class MathHelper {
+public static class ExtentionsHelper {
 
 	public static Vector3Int ToVector3Int(this Vector2Int self) {
 		return new Vector3Int(self.x, self.y, 0);
+	}
+
+	public static Vector2Int RoundToVector2Int(this Vector2 self) {
+		return new Vector2Int(Mathf.RoundToInt(self.x), Mathf.RoundToInt(self.y));
 	}
 
 	public static Vector3 ToVector3(this Vector2Int self) {
@@ -32,6 +36,7 @@ public static class MathHelper {
 		}
 		return v;
 	}
+
 	public static Vector2Int ToVector2Int(this Direction dir) {
 		Vector2Int v = Vector2Int.zero;
 		switch (dir) {
@@ -43,5 +48,11 @@ public static class MathHelper {
 			default: Debug.LogError("Invalid direction"); break;
 		}
 		return v;
+	}
+
+	public static bool IsAny(this TileType self, params TileType[] tiles) {
+		foreach (TileType item in tiles)
+			if (item == self) return true;
+		return false;
 	}
 }

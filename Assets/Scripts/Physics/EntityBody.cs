@@ -17,16 +17,48 @@ public sealed class EntityBody : MonoBehaviour {
 	public Vector2Int GroundPosition { get; private set; } = Vector2Int.zero;
 
 	// the floor that the entity is on or above
-	public int CurrentFloor { get; private set; } = 0;
+	public int CurrentFloor {
+		get => __currentFloor;
+		set {
+			if (__currentFloor != value) {
+				// remove from current floor
+				TilePhysics.ActiveRoom?.GetFloor(__currentFloor)?.__RemoveEntity(this);
+				transform.parent = null;
+				if (value != -1) {
+					// add to new floor
+					Floor floor = TilePhysics.ActiveRoom?.GetFloor(value);
+					if (floor) {
+						floor.__AddEntity(this);
+						transform.parent = floor.transform;
+					}
+				}
+				// change value
+				__currentFloor = value;
+			}
+		}
+	}
+	private int __currentFloor = -1;
 
 	// the position of the player vertically above the floor
-	public int VerticalPosition => Mathf.FloorToInt(VerticalPositionF);
+	public int VerticalPositionFloored => Mathf.FloorToInt(VerticalPositionF);
+
+	// the position of the player vertically below the floor
+	public int VerticalPositionCeiled => Mathf.CeilToInt(VerticalPositionF);
 
 	// the floating point position of the player vertically above the floor
 	public float VerticalPositionF { get; private set; } = 0.0f;
 
+	// the ground position + the floored vertical position
+	public Vector2Int FlooredTilePosition => GroundPosition + new Vector2Int(0, VerticalPositionFloored);
+
+	// the ground position + the ceiled vertical position
+	public Vector2Int CeiledTilePosition => GroundPosition + new Vector2Int(0, VerticalPositionCeiled);
+
 	// checks if the entity can be given a move input
 	public bool CanMove => IsStanding;
+
+	// checks if this entity is standing on the ground
+	public bool IsGrounded => IsStanding || IsWalking;
 
 	// determines how big 1 tile is
 	public Vector2 WorldScale {
@@ -43,7 +75,9 @@ public sealed class EntityBody : MonoBehaviour {
 	// body state
 	public enum EntityBodyState : byte {
 		Standing,
-		Walking
+		Walking,
+		Floating,
+		Falling
 	}
 
 	// the current state of this body
@@ -52,20 +86,30 @@ public sealed class EntityBody : MonoBehaviour {
 	// bools to check the state
 	public bool IsStanding => State == EntityBodyState.Standing;
 	public bool IsWalking => State == EntityBodyState.Walking;
+	public bool IsFloating => State == EntityBodyState.Floating;
+	public bool IsFalling => State == EntityBodyState.Falling;
 
+	[SerializeField] private EntityBodyState currentState = EntityBodyState.Standing;
+
+	[Header("Settings")]
 	[SerializeField] private Vector2 m_worldScale = Vector2.one;
 	[SerializeField] private bool m_isSolid = false;
-	[Tooltip("Tiles per second")]
+	[Header("Movement (Tiles per second)")]
 	[SerializeField] private float m_walkSpeed = 5f;
+	[SerializeField] private float m_floatSpeed = 2.25f;
+	[SerializeField] private float m_fallSpeed = 3.5f;
 
+	// state
 	private Direction m_currentMoveDir = Direction.None;
 	private Direction m_nextMoveDir = Direction.None;
 	private float m_moveDelta = 0.0f;
 	private Vector2 m_offsetPos = Vector2.zero;
+	private int m_lastVerticalPos = 0;
 
 	// moves this body according to the input direction, 
 	// returns false if already moving or if input was None or if it failed to move
 	public bool MoveInput(Direction dir) {
+		// cant move so we need to recored the input direction for next frame
 		if (!CanMove || dir == Direction.None) {
 			m_nextMoveDir = dir;
 			return false;
@@ -75,10 +119,64 @@ public sealed class EntityBody : MonoBehaviour {
 		return CheckAndMove(dir);
 	}
 
+	// calls the TilePhysics.GetTile function with this entity's given floor
+	public TileType GetTile(Vector2Int pos) {
+		return GetTile(pos, CurrentFloor);
+	}
+
+	// calls the TilePhysics.GetTile function 
+	public TileType GetTile(Vector2Int pos, int floorpos) {
+		return TilePhysics.GetTile(pos, floorpos);
+	}
+
+	// gets first tile below lowestfloor that isnt TileType.Floor or TileType.Wall
+	public TileType GetTileAbove(Vector2Int pos, int lowestfloor) {
+		TileType tile = TileType.Floor;
+		for (int i = lowestfloor; i < TilePhysics.ActiveRoom.CountFloors; i++) {
+			tile = GetTile(pos, i);
+			if (!tile.IsAny(TileType.Floor, TileType.Wall)) return tile;
+		}
+		return tile;
+	}
+
+	// gets first tile below lowestfloor that isnt TileType.Floor or TileType.Wall
+	public TileType GetTileAbove(Vector2Int pos, int lowestfloor, out int floorat) {
+		floorat = 0;
+		TileType tile = TileType.Floor;
+		for (int i = lowestfloor; i < TilePhysics.ActiveRoom.CountFloors; i++) {
+			floorat = i;
+			tile = GetTile(pos, i);
+			if (!tile.IsAny(TileType.Floor, TileType.Wall)) return tile;
+		}
+		return tile;
+	}
+
+	// gets first tile above lowestfloor that isnt TileType.Floor or TileType.Wall
+	public TileType GetTileBelow(Vector2Int pos, int highestfloor, out int floorat) {
+		floorat = highestfloor;
+		TileType tile = TileType.Floor;
+		for (int i = highestfloor; i >= 0; i--) {
+			floorat = i;
+			tile = GetTile(pos, i);
+			if (!tile.IsAny(TileType.Floor, TileType.Wall)) return tile;
+		}
+		return tile;
+	}
+
+	// gets first tile above lowestfloor that isnt TileType.Floor or TileType.Wall
+	public TileType GetTileBelow(Vector2Int pos, int highestfloor) {
+		TileType tile = TileType.Floor;
+		for (int i = highestfloor; i >= 0; i--) {
+			tile = GetTile(pos, i);
+			if (!tile.IsAny(TileType.Floor, TileType.Wall)) return tile;
+		}
+		return tile;
+	}
+
 	private bool CheckAndMove(Direction dir) {
 		// test to see if we can move
 		Vector2Int newpos = GroundPosition + dir.ToVector2Int();
-		if (TilePhysics.GetTile(newpos, CurrentFloor) == TileType.Wall) {
+		if (GetTile(newpos, CurrentFloor) == TileType.Wall) {
 			return false;
 		}
 
@@ -89,65 +187,171 @@ public sealed class EntityBody : MonoBehaviour {
 		return true;
 	}
 
-	private void Awake() {
-		//TilePhysics.Instance.AddEntity(this);
+	private void Start() {
+		// grab current groundpos
+		GroundPosition = (transform.position - new Vector3(0.5f, 0.5f, 0f)).RoundToVector2Int();
 
-		GroundPosition = transform.position.RoundToVector2Int();
+		// get floor, else assume floor 0
+		Floor floor = GetComponentInParent<Floor>();
+		if (floor) CurrentFloor = floor.FloorNumber;
+
 	}
-
-	//private void OnDestroy() {
-	//	if (!TilePhysics.Instance.RemoveEntity(this)) {
-	//		Debug.LogError("Failed to remove EntityBody from list, it was not found!");
-	//	}
-	//}
 
 	private void LateUpdate() {
 
+		// do movement
+		DoMovement(Time.deltaTime);
+
+		// set position
+		transform.position
+			= GroundPosition.ToVector3()
+			+ m_offsetPos.ToVector3()
+			+ new Vector3(0.5f, 0.5f + VerticalPositionF, 0f);
+
+		currentState = State;
+
+		Entity.Renderer.sortingOrder = (CurrentFloor * 2) + 1;
+	}
+
+	private void DoMovement(float delta) {
 		// walk
-		if (IsWalking) {
-			m_moveDelta += m_walkSpeed * Time.deltaTime;
+		if (IsWalking)
+			DoWalking(delta);
 
-			// reached tile
-			if (m_moveDelta > 1.0f) {
-				// move ground pos
-				GroundPosition += m_currentMoveDir.ToVector2Int();
+		// floating up
+		else if (IsFloating)
+			DoFloating(delta);
 
-				// check for movement
-				if (m_nextMoveDir != Direction.None) {
-					// continue moving
-					if (m_nextMoveDir == m_currentMoveDir) {
-						m_moveDelta -= 1f;
-						if (!CheckAndMove(m_nextMoveDir)) State = EntityBodyState.Standing;
-					}
-					// continue in different direction
-					else {
-						m_moveDelta = 0f;
-						if (!CheckAndMove(m_nextMoveDir)) State = EntityBodyState.Standing;
-					}
-				} 
-				// force reset when no held direction
+		// falling down
+		else if (IsFalling)
+			DoFalling(delta);
+
+		// standing
+		else if (IsStanding) {
+			// check for another state
+			TileType tile = GetTile(GroundPosition);
+			if (tile.IsAny(TileType.Updraft, TileType.Fall)) {
+				// updraft
+				if (tile == TileType.Updraft)
+					State = EntityBodyState.Floating;
+				// fall
+				else if (tile == TileType.Fall)
+					State = EntityBodyState.Falling;
+			}
+		}
+	}
+
+	private void DoWalking(float delta) {
+		m_moveDelta += m_walkSpeed * delta;
+
+		// reached tile
+		if (m_moveDelta > 1.0f) {
+			// move ground pos
+			GroundPosition += m_currentMoveDir.ToVector2Int();
+
+			// check what we are standing on
+			TileType tile = GetTile(GroundPosition);
+			if (tile != TileType.Floor) {
+				// updraft
+				if (tile == TileType.Updraft)
+					State = EntityBodyState.Floating;
+				// fall
+				else if (tile == TileType.Fall)
+					State = EntityBodyState.Falling;
+				// invalid, reset
 				else State = EntityBodyState.Standing;
-
-				// reset
-				if (IsStanding) {
+			}
+			// check for movement
+			else if (m_nextMoveDir != Direction.None) {
+				// continue moving
+				if (m_nextMoveDir == m_currentMoveDir) {
+					m_moveDelta -= 1f;
+					if (!CheckAndMove(m_nextMoveDir)) State = EntityBodyState.Standing;
+				}
+				// continue in different direction
+				else {
 					m_moveDelta = 0f;
-					m_offsetPos = Vector2.zero;
-					m_currentMoveDir = Direction.None;
+					if (!CheckAndMove(m_nextMoveDir)) State = EntityBodyState.Standing;
 				}
 			}
-			m_nextMoveDir = Direction.None;
+			// force reset when no held direction
+			else State = EntityBodyState.Standing;
 
-			// set offset
-			if (!IsStanding && m_moveDelta <= 1.0f) {
-				m_offsetPos = m_currentMoveDir.ToVector2() * m_moveDelta * m_worldScale;
+			// reset
+			if (!IsWalking) {
+				m_moveDelta = 0f;
+				m_offsetPos = Vector2.zero;
+				m_currentMoveDir = Direction.None;
+			}
+		}
+		m_nextMoveDir = Direction.None;
+
+		// set offset
+		if (!IsStanding && m_moveDelta <= 1.0f) {
+			m_offsetPos = m_currentMoveDir.ToVector2() * m_moveDelta * m_worldScale;
+		}
+	}
+
+	private void DoFloating(float delta) {
+		// move up
+		VerticalPositionF += delta * m_floatSpeed;
+
+		// check if standing on another updraft or blockdraft
+		TileType tile = GetTileAbove(FlooredTilePosition, CurrentFloor + 1, out int onFloor);
+		if (tile.IsAny(TileType.Blockdraft, TileType.Updraft)) {
+			// change floors
+			CurrentFloor = onFloor;
+			GroundPosition += new Vector2Int(0, VerticalPositionFloored);
+			VerticalPositionF -= VerticalPositionFloored;
+			m_lastVerticalPos = VerticalPositionFloored;
+
+			// lock position and return to standing
+			if (tile == TileType.Blockdraft) {
+				VerticalPositionF = 0f;
+				State = EntityBodyState.Standing;
+				return;
 			}
 		}
 
+		// if standing on updraft, check for input
+		if (VerticalPositionFloored == 0 && tile.IsAny(TileType.Blockdraft, TileType.Updraft)) {
+			// check for input and move
+			if (m_nextMoveDir != Direction.None) {
+				if (CheckAndMove(m_nextMoveDir))
+					VerticalPositionF = 0f;
+			}
+		}
+	}
 
-		// set position
-		Vector3 pos = GroundPosition.ToVector3();
-		pos.y += VerticalPositionF;
-		transform.position = pos + m_offsetPos.ToVector3() + new Vector3(0.5f, 0.5f, 0f);
+	private void DoFalling(float delta) {
+		// move down
+		VerticalPositionF -= delta * m_fallSpeed;
+
+		// check if standing on another fall or blockdraft
+		TileType tile = GetTileBelow(CeiledTilePosition, CurrentFloor - 1, out int onFloor);
+		if (tile.IsAny(TileType.Blockdraft, TileType.Fall)) {
+			// change floors
+			CurrentFloor = onFloor;
+			GroundPosition += new Vector2Int(0, VerticalPositionCeiled);
+			VerticalPositionF -= VerticalPositionCeiled;
+			m_lastVerticalPos = VerticalPositionCeiled;
+
+			// lock position and return to standing
+			if (tile == TileType.Blockdraft) {
+				VerticalPositionF = 0f;
+				State = EntityBodyState.Standing;
+				return;
+			}
+		}
+
+		// if standing on updraft, check for input
+		if (VerticalPositionCeiled == 0 && tile.IsAny(TileType.Blockdraft, TileType.Fall)) {
+			// check for input and move
+			if (m_nextMoveDir != Direction.None) {
+				if (CheckAndMove(m_nextMoveDir))
+					VerticalPositionF = 0f;
+			}
+		}
 
 	}
 

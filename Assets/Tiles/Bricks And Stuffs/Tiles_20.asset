@@ -9,10 +9,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 0}
-  m_Name: Surface Tile
-  m_EditorClassIdentifier: Assembly-CSharp::SurfaceTile
-  m_Sprite: {fileID: 4099902767569298868, guid: 0ff519e79faafe749b8143dea66d092d, type: 3}
+  m_Script: {fileID: 13312, guid: 0000000000000000e000000000000000, type: 0}
+  m_Name: Tiles_20
+  m_EditorClassIdentifier: 
+  m_Sprite: {fileID: -7956832237065629149, guid: 0ff519e79faafe749b8143dea66d092d, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_Transform:
     e00: 1
