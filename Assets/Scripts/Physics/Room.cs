@@ -4,15 +4,15 @@ using UnityEngine;
 
 public sealed class Room : MonoBehaviour {
 
-	public string RoomName => gameObject.name;
+	public string RoomName { get; private set; } = null;
 	public int CountFloors => m_floors.Count;
 	public Floor GetFloor(int index) => (index >= 0 && index < CountFloors ? m_floors[index] : null);
-
-	//[SerializeField] private string m_roomName;
 
 	private List<Floor> m_floors = new List<Floor>();
 
 	private void Awake() {
+		RoomName = gameObject.name;
+
 		// get all floors in children
 		foreach (Transform t in transform) {
 			if (!t.gameObject.activeSelf) continue;
@@ -27,7 +27,12 @@ public sealed class Room : MonoBehaviour {
 			m_floors[i].__SetFloorNumber(i);
 		}
 
+		TilePhysics.AddRoom(RoomName, this);
 		TilePhysics.ActiveRoom = this;
+	}
+
+	private void OnDestroy() {
+		TilePhysics.RemoveRoom(RoomName);
 	}
 
 }

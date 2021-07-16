@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class TilePhysics : ScriptableObject {
+public class TilePhysics {
 
 	public static Room ActiveRoom { get; set; } = null;
 
@@ -27,6 +27,13 @@ public class TilePhysics : ScriptableObject {
 		Floor floor = ActiveRoom.GetFloor(floorpos);
 		if (floor) return floor.GetEntityAt(pos);
 		return null;
+	}
+
+	// gets all the entities at position
+	public static bool GetEntities(Vector2Int pos, int floorpos, ref List<EntityBody> entities) {
+		Floor floor = ActiveRoom.GetFloor(floorpos);
+		if (floor) return floor.GetEntitiesAt(pos, ref entities);
+		return false;
 	}
 
 	public static void AddRoom(string name, Room room) => m_rooms.Add(name, room);

@@ -181,7 +181,7 @@ TextureImporter:
     second: Collision_Updraft
   - first:
       213: 857779327251732012
-    second: Tiles_8
+    second: Collision_BoxMoveable
   - first:
       213: 3825752689756085014
     second: Tiles_9
@@ -211,7 +211,7 @@ TextureImporter:
     second: Tiles_62
   - first:
       213: 7446964186351517068
-    second: ButtonPressed
+    second: Button_Pressed
   - first:
       213: -2106753311485234791
     second: Collision_Ground
@@ -229,10 +229,10 @@ TextureImporter:
     second: Tiles_75
   - first:
       213: -2265954188839605315
-    second: Tiles_76
+    second: GoldenKey
   - first:
       213: -2425015904701711284
-    second: Tiles_77
+    second: SilverKey
   - first:
       213: -7114055807923546517
     second: Tiles_79
@@ -1435,7 +1435,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: ButtonPressed
+      name: Button_Pressed
       rect:
         serializedVersion: 2
         x: 80
@@ -1603,7 +1603,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Tiles_76
+      name: GoldenKey
       rect:
         serializedVersion: 2
         x: 64
@@ -1624,7 +1624,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Tiles_77
+      name: SilverKey
       rect:
         serializedVersion: 2
         x: 80
@@ -1842,7 +1842,7 @@ TextureImporter:
         width: 16
         height: 16
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
@@ -1863,7 +1863,7 @@ TextureImporter:
         width: 16
         height: 16
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
@@ -1871,6 +1871,111 @@ TextureImporter:
       bones: []
       spriteID: ba1ce127c348aa510800000000000000
       internalID: 1561205615984820651
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Collision_BoxMoveable
+      rect:
+        serializedVersion: 2
+        x: 240
+        y: 176
+        width: 16
+        height: 16
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c265380e0c177eb00800000000000000
+      internalID: 857779327251732012
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Tiles_9
+      rect:
+        serializedVersion: 2
+        x: 176
+        y: 192
+        width: 16
+        height: 32
+      alignment: 9
+      pivot: {x: 0.5, y: 0.75}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 61b18673dcdc71530800000000000000
+      internalID: 3825752689756085014
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Tiles_34
+      rect:
+        serializedVersion: 2
+        x: 208
+        y: 192
+        width: 16
+        height: 32
+      alignment: 9
+      pivot: {x: 0.5, y: 0.75}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 0cf7c2d90fc726e20800000000000000
+      internalID: 3342371246333263808
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Tiles_35
+      rect:
+        serializedVersion: 2
+        x: 176
+        y: 240
+        width: 16
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 5380e3d6e3f7d4450800000000000000
+      internalID: 6074651378490148917
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Tiles_54
+      rect:
+        serializedVersion: 2
+        x: 176
+        y: 224
+        width: 16
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 56b875317d43fc090800000000000000
+      internalID: -8012127113721705627
       vertices: []
       indices: 
       edges: []

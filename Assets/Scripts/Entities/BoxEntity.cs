@@ -8,4 +8,11 @@ public class BoxEntity : Entity {
 		Body.IsSolid = true;
 	}
 
+	// tries to move the box in a direction
+	public bool TryMove(Direction dir) {
+		TileType tile = Body.GetTile(Body.GroundPosition + dir.ToVector2Int());
+		if (tile == TileType.BoxMoveable) return Body.MoveInput(dir);
+		return false;
+	}
+
 }

@@ -8,7 +8,8 @@ public enum TileType : byte {
 	Wall,
 	Fall,
 	Updraft,
-	Blockdraft
+	Blockdraft,
+	BoxMoveable
 }
 
 [CreateAssetMenu(fileName = "Updraft Tile", menuName = "Collision Tiles/Updraft Tile")]
@@ -22,3 +23,6 @@ public class FallTile : Tile { }
 
 [CreateAssetMenu(fileName = "Blockdraft Tile", menuName = "Collision Tiles/Blockdraft Tile")]
 public class BlockdraftTile : Tile { }
+
+[CreateAssetMenu(fileName = "BoxMoveable Tile", menuName = "Collision Tiles/BoxMoveable Tile")]
+public class BoxMoveableTile : Tile { }

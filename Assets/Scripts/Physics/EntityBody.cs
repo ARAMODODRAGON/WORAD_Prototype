@@ -13,6 +13,12 @@ public sealed class EntityBody : MonoBehaviour {
 	}
 	private Entity __entity = null;
 
+	// callbacks for overlapping something
+	public delegate void LandOnEntity(EntityBody body);
+	public delegate void LandOnTile(TileType tile);
+	public LandOnEntity landOnEntity;
+	public LandOnTile landOnTile;
+
 	// the position of this entity in tilespace
 	public Vector2Int GroundPosition { get; private set; } = Vector2Int.zero;
 
@@ -89,8 +95,10 @@ public sealed class EntityBody : MonoBehaviour {
 	public bool IsFloating => State == EntityBodyState.Floating;
 	public bool IsFalling => State == EntityBodyState.Falling;
 
-	[SerializeField] private EntityBodyState currentState = EntityBodyState.Standing;
+	// read only
+	//[SerializeField] private EntityBodyState currentState = EntityBodyState.Standing;
 
+	// inspector stuff
 	[Header("Settings")]
 	[SerializeField] private Vector2 m_worldScale = Vector2.one;
 	[SerializeField] private bool m_isSolid = false;
@@ -99,12 +107,29 @@ public sealed class EntityBody : MonoBehaviour {
 	[SerializeField] private float m_floatSpeed = 2.25f;
 	[SerializeField] private float m_fallSpeed = 3.5f;
 
-	// state
-	private Direction m_currentMoveDir = Direction.None;
-	private Direction m_nextMoveDir = Direction.None;
-	private float m_moveDelta = 0.0f;
-	private Vector2 m_offsetPos = Vector2.zero;
-	private int m_lastVerticalPos = 0;
+	// trys to move this entity to another position
+	// returns false if did not change positions
+	public bool TrySetPosition(Vector2Int newPosition) {
+		return TrySetPosition(newPosition, CurrentFloor);
+	}
+
+	// trys to move this entity to another position and floor
+	// returns false if did not change positions
+	public bool TrySetPosition(Vector2Int newPosition, int newFloor) {
+		if (newFloor < 0 || newFloor >= TilePhysics.ActiveRoom.CountFloors) return false;
+
+		// get the tile
+		TileType tile = GetTile(newPosition, newFloor);
+
+		// check if we cant move there
+		if (tile == TileType.Wall) return false;
+
+		// move
+		GroundPosition = newPosition;
+		CurrentFloor = newFloor;
+
+		return true;
+	}
 
 	// moves this body according to the input direction, 
 	// returns false if already moving or if input was None or if it failed to move
@@ -187,6 +212,16 @@ public sealed class EntityBody : MonoBehaviour {
 		return true;
 	}
 
+
+	// private ///////////////////////////////////////////////////////////////
+	private Direction m_currentMoveDir = Direction.None;
+	private Direction m_nextMoveDir = Direction.None;
+	private float m_moveDelta = 0.0f;
+	private Vector2 m_offsetPos = Vector2.zero;
+	private int m_lastVerticalPos = 0;
+	private bool m_landedOnTile = false;
+	private List<EntityBody> m_entityList = new List<EntityBody>();
+
 	private void Start() {
 		// grab current groundpos
 		GroundPosition = (transform.position - new Vector3(0.5f, 0.5f, 0f)).RoundToVector2Int();
@@ -208,9 +243,30 @@ public sealed class EntityBody : MonoBehaviour {
 			+ m_offsetPos.ToVector3()
 			+ new Vector3(0.5f, 0.5f + VerticalPositionF, 0f);
 
-		currentState = State;
+		//currentState = State;
 
-		Entity.Renderer.sortingOrder = (CurrentFloor * 2) + 1;
+		int ypos = Mathf.FloorToInt(GroundPosition.y + m_offsetPos.y);
+		int floor = CurrentFloor;
+		if (Mathf.Abs(VerticalPositionF) > 0.1f) floor += 1;
+		Entity.Renderer.sortingOrder = (floor * 1000) + 500 - ypos;
+
+		// stood on new tile, invoke callback
+		if (m_landedOnTile == true) {
+			m_landedOnTile = false;
+
+			// invoke for tile
+			landOnTile?.Invoke(GetTile(GroundPosition));
+
+			// invoke for entities
+			if (landOnEntity != null) {
+				m_entityList.Clear();
+				if (TilePhysics.GetEntities(GroundPosition, CurrentFloor, ref m_entityList)) {
+					foreach (EntityBody item in m_entityList) {
+						landOnEntity(item);
+					}
+				}
+			}
+		}
 	}
 
 	private void DoMovement(float delta) {
@@ -246,6 +302,8 @@ public sealed class EntityBody : MonoBehaviour {
 
 		// reached tile
 		if (m_moveDelta > 1.0f) {
+			m_landedOnTile = true;
+
 			// move ground pos
 			GroundPosition += m_currentMoveDir.ToVector2Int();
 
@@ -309,6 +367,7 @@ public sealed class EntityBody : MonoBehaviour {
 			if (tile == TileType.Blockdraft) {
 				VerticalPositionF = 0f;
 				State = EntityBodyState.Standing;
+				m_landedOnTile = true;
 				return;
 			}
 		}
@@ -317,6 +376,7 @@ public sealed class EntityBody : MonoBehaviour {
 		if (VerticalPositionFloored == 0 && tile.IsAny(TileType.Blockdraft, TileType.Updraft)) {
 			// check for input and move
 			if (m_nextMoveDir != Direction.None) {
+				m_landedOnTile = true;
 				if (CheckAndMove(m_nextMoveDir))
 					VerticalPositionF = 0f;
 			}
@@ -340,6 +400,7 @@ public sealed class EntityBody : MonoBehaviour {
 			if (tile == TileType.Blockdraft) {
 				VerticalPositionF = 0f;
 				State = EntityBodyState.Standing;
+				m_landedOnTile = true;
 				return;
 			}
 		}
@@ -348,6 +409,7 @@ public sealed class EntityBody : MonoBehaviour {
 		if (VerticalPositionCeiled == 0 && tile.IsAny(TileType.Blockdraft, TileType.Fall)) {
 			// check for input and move
 			if (m_nextMoveDir != Direction.None) {
+				m_landedOnTile = true;
 				if (CheckAndMove(m_nextMoveDir))
 					VerticalPositionF = 0f;
 			}
